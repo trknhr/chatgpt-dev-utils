@@ -1,5 +1,9 @@
 # ChatGPT Dev Utils
 
+<p align="center">
+  <img src="img/image.png" alt="ChatGPT Dev Utils Icon" width="160" />
+</p>
+
 A developer-friendly CLI tool that lets you send prompts to ChatGPT directly from your terminal, using your existing ChatGPT web session via a Chrome extension. Useful for generating commit messages, code explanations, translations, and more.
 
 ## ✨ Features
@@ -70,4 +74,5 @@ pnpm --filter cli dev
 
 ## 🤝 License
 
-MIT © 2024 trknhr
+This project is licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
+Copyright © 2025 Teruo Kunihiro.
