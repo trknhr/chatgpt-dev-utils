@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+.pnpm/
+
+# build outputs
+dist/
+*.tsbuildinfo
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# local env
+.env
+.env.*
+
+# VSCode config
+.vscode/
+
+# system
+.DS_Store
+Thumbs.db
+
+# optional: CLI proxy server pid or temp files
+*.pid
+/tmp/
