@@ -1,5 +1,0 @@
-packages:
-  - packages/chatgpt-dev-utils
-  - packages/extension
-  - packages/extension-proxy
-  - packages/shared

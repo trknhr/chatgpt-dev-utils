@@ -35,6 +35,6 @@ chrome.runtime.onMessage.addListener((message) => {
         keyCode: 13,
         which: 13
       }));
-    }, 100);
+    }, 1000);
   }
 });
