@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/atotto/clipboard"
+	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -34,6 +35,7 @@ const (
 	stepGitTemplate
 	stepFileTemplate
 	stepGitEdit
+	stepFileEdit
 	stepFinal
 )
 
@@ -67,6 +69,7 @@ type Model struct {
 	height           int
 	viewport         viewport.Model
 	extensionEnabled bool // Flag to show extension button
+	textarea         textarea.Model
 }
 
 // Styles
@@ -112,12 +115,30 @@ func initialModel(extensionEnabled bool) Model {
 		BorderForeground(lipgloss.Color("62")).
 		PaddingRight(2)
 
+	ta := textarea.New()
+	ta.Placeholder = "Edit your prompt here..."
+	ta.Focus()
+	ta.SetWidth(60 - 4)
+	ta.SetHeight(10)
+	ta.ShowLineNumbers = false
+	ta.Prompt = ""
+	ta.FocusedStyle.Prompt = lipgloss.NewStyle().Width(0)
+	ta.BlurredStyle.Prompt = lipgloss.NewStyle().Width(0)
+	ta.FocusedStyle.Base = lipgloss.NewStyle().
+		Background(lipgloss.Color("235")). // ダークグレー
+		Foreground(lipgloss.Color("252"))  // 明るめの白
+	ta.FocusedStyle.Base = lipgloss.NewStyle().
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("63")). // パープル枠
+		Padding(1, 1)
+
 	return Model{
 		currentStep:      stepPromptType,
 		gitTemplates:     gitTemplates,
 		fileTemplates:    fileTemplates,
 		viewport:         vp,
 		extensionEnabled: extensionEnabled,
+		textarea:         ta,
 	}
 }
 
@@ -188,6 +209,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updateTemplateSelect(msg)
 		case stepGitEdit:
 			return m.updateGitEdit(msg)
+		case stepFileEdit:
+			return m.updateFileEdit(msg)
 		case stepFinal:
 			return m.updateFinal(msg)
 		}
@@ -334,9 +357,13 @@ func (m Model) updateTemplateSelect(msg tea.KeyMsg) (Model, tea.Cmd) {
 		if m.promptType == "git" {
 			m.currentStep = stepGitEdit
 			m.customPrompt = m.gitTemplates[m.selectedTemplate]
-		} else {
-			m.currentStep = stepFinal
-			m.finalPrompt = m.generateFilePrompt()
+			m.textarea.SetValue(m.customPrompt)
+			m.textarea.Focus()
+		} else if m.promptType == "file" {
+			m.currentStep = stepFileEdit
+			m.customPrompt = m.fileTemplates[m.selectedTemplate]
+			m.textarea.SetValue(m.customPrompt)
+			m.textarea.Focus()
 		}
 		m.cursor = 0
 	}
@@ -344,12 +371,29 @@ func (m Model) updateTemplateSelect(msg tea.KeyMsg) (Model, tea.Cmd) {
 }
 
 func (m Model) updateGitEdit(msg tea.KeyMsg) (Model, tea.Cmd) {
-	switch msg.String() {
-	case "tab":
-		m.currentStep = stepFinal
+	if msg.Type == tea.KeyTab {
+		m.customPrompt = m.textarea.Value()
 		m.finalPrompt = m.customPrompt
+		m.currentStep = stepFinal
+		return m, nil
 	}
-	return m, nil
+
+	var cmd tea.Cmd
+	m.textarea, cmd = m.textarea.Update(msg)
+	return m, cmd
+}
+
+func (m Model) updateFileEdit(msg tea.KeyMsg) (Model, tea.Cmd) {
+	if msg.Type == tea.KeyTab {
+		m.customPrompt = m.textarea.Value()
+		m.finalPrompt = m.customPrompt
+		m.currentStep = stepFinal
+		return m, nil
+	}
+
+	var cmd tea.Cmd
+	m.textarea, cmd = m.textarea.Update(msg)
+	return m, cmd
 }
 
 func (m Model) updateFinal(msg tea.KeyMsg) (Model, tea.Cmd) {
@@ -358,7 +402,7 @@ func (m Model) updateFinal(msg tea.KeyMsg) (Model, tea.Cmd) {
 		var finalContent string
 		if m.promptType == "file" {
 			// Generate file prompt with actual content
-			finalContent = m.generateFilePrompt()
+			finalContent = m.generateFilePrompt(m.finalPrompt)
 		} else {
 			// Execute git commands
 			finalContent = m.executeGitCommands(m.finalPrompt)
@@ -370,7 +414,7 @@ func (m Model) updateFinal(msg tea.KeyMsg) (Model, tea.Cmd) {
 			var finalContent string
 			if m.promptType == "file" {
 				// Generate file prompt with actual content
-				finalContent = m.generateFilePrompt()
+				finalContent = m.generateFilePrompt(m.finalPrompt)
 			} else {
 				// Execute git commands
 				finalContent = m.executeGitCommands(m.finalPrompt)
@@ -408,6 +452,8 @@ func (m Model) View() string {
 		return m.viewTemplateSelect()
 	case stepGitEdit:
 		return m.viewGitEdit()
+	case stepFileEdit:
+		return m.viewFileEdit()
 	case stepFinal:
 		return m.viewFinal()
 	}
@@ -495,19 +541,61 @@ func (m Model) viewTemplateSelect() string {
 }
 
 func (m Model) viewGitEdit() string {
+	// title := titleStyle.Render("Step 3/4: Review & Edit")
+
+	// content := fmt.Sprintf("Template: %s\n\n%s", m.selectedTemplate, m.customPrompt)
+
+	// help := helpStyle.Render("[Tab: Next] [Esc: Back] (Edit functionality would be added here)")
+
+	// // Adjust box width based on terminal size
+	// boxWidth := 80
+	// if m.width > 0 && m.width < 90 {
+	// 	boxWidth = m.width - 10
+	// }
+
+	// boxContent := boxStyle.Width(boxWidth).Render(content)
+
+	// return fmt.Sprintf("%s\n%s\n%s\n%s",
+	// 	title,
+	// 	boxContent,
+	// 	help,
+	// 	m.message,
+	// )
 	title := titleStyle.Render("Step 3/4: Review & Edit")
 
-	content := fmt.Sprintf("Template: %s\n\n%s", m.selectedTemplate, m.customPrompt)
+	body := fmt.Sprintf("Template: %s\n\n%s", m.selectedTemplate, m.textarea.View())
 
-	help := helpStyle.Render("[Tab: Next] [Esc: Back] (Edit functionality would be added here)")
+	help := helpStyle.Render("[↑↓←→ Type freely] [Tab: Next] [Esc: Back]")
 
-	// Adjust box width based on terminal size
 	boxWidth := 80
 	if m.width > 0 && m.width < 90 {
 		boxWidth = m.width - 10
 	}
 
-	boxContent := boxStyle.Width(boxWidth).Render(content)
+	boxContent := boxStyle.Width(boxWidth).Render(body)
+	// boxContent := boxStyle.Width(boxWidth).Render(body)
+
+	return fmt.Sprintf("%s\n%s\n%s\n%s",
+		title,
+		boxContent,
+		help,
+		m.message,
+	)
+}
+
+func (m Model) viewFileEdit() string {
+	title := titleStyle.Render("Step 3/4: Review & Edit")
+
+	body := fmt.Sprintf("Template: %s\n\n%s", m.selectedTemplate, m.textarea.View())
+
+	help := helpStyle.Render("[↑↓←→ Type freely] [Tab: Next] [Esc: Back]")
+
+	boxWidth := 80
+	if m.width > 0 && m.width < 90 {
+		boxWidth = m.width - 10
+	}
+
+	boxContent := boxStyle.Width(boxWidth).Render(body)
 
 	return fmt.Sprintf("%s\n%s\n%s\n%s",
 		title,
@@ -528,7 +616,7 @@ func (m Model) viewFinal() string {
 	var content string
 	if m.promptType == "file" {
 		// Show template with selected files list
-		template := m.fileTemplates[m.selectedTemplate]
+		template := m.finalPrompt
 		if template == "" {
 			template = "Please analyze these files:\n\n$(files)"
 		}
@@ -681,10 +769,10 @@ func (m Model) getNodeDepth(node *FileNode) int {
 	return depth
 }
 
-func (m Model) generateFilePrompt() string {
-	template := m.fileTemplates[m.selectedTemplate]
-	if template == "" {
-		template = "Please analyze these files:\n\n$(files)"
+func (m Model) generateFilePrompt(text string) string {
+	// template := m.fileTemplates[m.selectedTemplate]
+	if text == "" {
+		text = "Please analyze these files:\n\n$(files)"
 	}
 
 	// Replace $(files) with actual file contents
@@ -698,7 +786,7 @@ func (m Model) generateFilePrompt() string {
 		fileContents += fmt.Sprintf("// File: %s\n%s\n\n", file.Path, string(content))
 	}
 
-	return strings.ReplaceAll(template, "$(files)", fileContents)
+	return strings.ReplaceAll(text, "$(files)", fileContents)
 }
 
 func (m Model) executeGitCommands(prompt string) string {
