@@ -26,3 +26,5 @@ Thumbs.db
 # optional: CLI proxy server pid or temp files
 *.pid
 /tmp/
+
+CLAUDE.md
