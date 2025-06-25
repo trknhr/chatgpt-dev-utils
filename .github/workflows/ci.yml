@@ -30,3 +30,12 @@ jobs:
           cd cli
           go vet ./...
           go fmt ./... | tee /dev/stderr
+      - name: Set up GoReleaser
+        uses: goreleaser/goreleaser-action@v5
+        with:
+            version: latest
+
+      - name: Run snapshot release (no tag)
+        run: goreleaser release --snapshot --clean
+        if: github.ref_type != 'tag'
+

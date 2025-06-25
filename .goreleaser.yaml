@@ -16,10 +16,6 @@ builds:
 
 archives:
   - format: tar.gz
-    replacements:
-      darwin: macOS
-      amd64: x86_64
-      arm64: arm64
     files:
       - LICENSE
       - README.md
