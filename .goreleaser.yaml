@@ -2,7 +2,7 @@ project_name: cdev
 
 builds:
   - id: cli
-    main: ./cli/main.go
+    main: ./main.go
     dir: ./cli
     binary: cdev
     goos:
