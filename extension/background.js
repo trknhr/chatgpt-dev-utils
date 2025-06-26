@@ -1,8 +1,15 @@
 let ws = null;
 
+// Check if the local CLI proxy is available before attempting to connect
+function isServerRunning() {
+  return fetch("http://localhost:32123/ping", { method: "GET" })
+    .then(() => true)
+    .catch(() => false);
+}
+
 function connectWebSocket() {
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
-    return; // do nothing when it's connected already
+    return; // do nothing when it's already connected or connecting
   }
 
   ws = new WebSocket("ws://localhost:32123/ws");
@@ -29,23 +36,30 @@ function connectWebSocket() {
     ws = null;
   });
 
-  ws.addEventListener("error", (err) => {
-    ws.close();
+  ws.addEventListener("error", () => {
+    // Silently handle connection errors without logging
     ws = null;
   });
 }
 
-// 1秒ごとに接続を確認して未接続なら再接続
+// Check WebSocket connection every second
 setInterval(() => {
   if (!ws || ws.readyState === WebSocket.CLOSED) {
-    console.log("🔁 Attempting to reconnect WebSocket...");
-    connectWebSocket();
+    isServerRunning().then((running) => {
+      if (running) {
+        console.log("🔁 Attempting to reconnect WebSocket...");
+        connectWebSocket();
+      } else {
+        console.log("🚫 CLI proxy is not running");
+      }
+    });
   } else if (ws.readyState === WebSocket.OPEN) {
     ws.send("ping");
     console.log("📡 Sent ping to CLI proxy (keep-alive)");
   }
 }, 1000);
 
+// Create a heartbeat alarm to verify the extension is alive
 chrome.runtime.onInstalled.addListener(() => {
   chrome.alarms.create('heartbeat', { periodInMinutes: 1 });
 });
@@ -56,8 +70,8 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
+// Open or reuse a ChatGPT tab and send the prompt
 function openOrCreateChatGPTTab(prompt) {
-  // If a ChatGPT tab exists, reuse it; otherwise, create a new one
   chrome.tabs.query({}, (tabs) => {
     const existingNewChatPage = tabs.find(tab =>
       tab.url && tab.url === "https://chatgpt.com" && tab.status === "complete"
@@ -67,12 +81,10 @@ function openOrCreateChatGPTTab(prompt) {
       console.log("🟢 Found existing ChatGPT tab:", existingNewChatPage.id);
       chrome.tabs.sendMessage(existingNewChatPage.id, { type: "chatgpt-prompt", prompt });
     } else {
-      // 新しいタブを作成して、読み込み完了を待つ
       chrome.tabs.create({ url: "https://chatgpt.com" }, (tab) => {
         const tabId = tab.id;
         console.log("🆕 Created new ChatGPT tab:", tabId);
 
-        // ポーリングして読み込み完了を待つ
         const checkTabReady = (retries = 20) => {
           if (retries <= 0) {
             console.warn("⚠️ New ChatGPT tab did not load in time");

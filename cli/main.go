@@ -837,6 +837,22 @@ func (m Model) executeCommand(command string) string {
 
 func startWebSocketServer() {
 	http.HandleFunc("/ws", handleConnections)
+
+	// Simple HTTP health check
+	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("pong"))
+	})
+
 	go handleMessages()
 	log.Println("WebSocket server started at :32123")
 	go func() {
