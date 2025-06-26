@@ -3,7 +3,10 @@ name: Release
 on:
   push:
     tags:
-      - 'v*.*.*'  # 例: v1.2.3 のときのみ発火
+      - 'v*.*.*' 
+
+permissions:
+  contents: write
 
 jobs:
   release:
