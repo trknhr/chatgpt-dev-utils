@@ -3,27 +3,26 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*.*.*'  # 例: v1.2.3 のときのみ発火
 
 jobs:
   release:
+    name: Release via GoReleaser
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: write
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: 1.24
 
-      - name: Set up Goreleaser
+      - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
           args: release --clean
         env:
-          GORELEASER_KEY: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 必須：GitHub Releases への認証
