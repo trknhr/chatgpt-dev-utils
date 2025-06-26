@@ -3,6 +3,7 @@ project_name: cdev
 builds:
   - id: cli
     main: ./cli/main.go
+    dir: ./cli
     binary: cdev
     goos:
       - linux
