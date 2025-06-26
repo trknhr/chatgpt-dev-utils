@@ -1,0 +1,32 @@
+name: Build Chrome Extension on Tag
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set version in manifest.json
+        run: |
+          TAG_NAME=${GITHUB_REF##*/}
+          VERSION=${TAG_NAME#v}
+          echo "Version: $VERSION"
+          jq --arg version "$VERSION" '.version = $version' extension/manifest.json > tmp && mv tmp extension/manifest.json
+
+      - name: Zip extension
+        run: |
+          cd extension
+          zip -r ../extension.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrome-extension
+          path: extension.zip

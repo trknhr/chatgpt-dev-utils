@@ -1,0 +1,25 @@
+name: Chrome Extension CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-zip:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Zip extension directory
+        run: |
+          cd extension
+          zip -r ../extension.zip . -x "*.DS_Store"
+
+      - name: Upload zip as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrome-extension
+          path: extension.zip
