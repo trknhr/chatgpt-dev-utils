@@ -2,7 +2,7 @@
 
 set -e
 
-REPO="your-org-or-username/chatgpt-dev-utils"
+REPO="trknhr/chatgpt-dev-utils"
 BINARY_NAME="cdev"
 INSTALL_DIR="/usr/local/bin"
 
@@ -10,16 +10,17 @@ INSTALL_DIR="/usr/local/bin"
 OS="$(uname | tr '[:upper:]' '[:lower:]')"
 ARCH="$(uname -m)"
 case "$ARCH" in
-  x86_64) ARCH="x86_64" ;;
+  x86_64) ARCH="amd64" ;;
   arm64|aarch64) ARCH="arm64" ;;
   *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
 esac
 
 # Fetch latest release tag
 TAG=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+TAG_NO_V=$(echo "$TAG" | sed 's/^v//')
 
 # Build download URL
-FILENAME="${BINARY_NAME}-${OS}-${ARCH}.tar.gz"
+FILENAME="${BINARY_NAME}_${TAG_NO_V}_${OS}_${ARCH}.tar.gz"
 URL="https://github.com/${REPO}/releases/download/${TAG}/${FILENAME}"
 
 # Download and extract
