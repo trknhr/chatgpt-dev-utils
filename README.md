@@ -23,7 +23,7 @@ A developer-friendly CLI tool to send prompts directly to ChatGPT using your Chr
 Install the latest release via:
 
 ```bash
-curl -sSfL https://raw.githubusercontent.com/your-org/chatgpt-dev-utils/main/install.sh | sh
+curl -sSfL https://raw.githubusercontent.com/trknhr/chatgpt-dev-utils/main/install.sh | sh
 ```
 
 This will:
