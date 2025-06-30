@@ -13,10 +13,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Zip extension directory
         run: |
           cd extension
-          zip -r ../extension.zip . -x "*.DS_Store"
+          npm run build:prod
+          cd dist
+          zip -r ../../extension.zip . -x "*.DS_Store"
 
       - name: Upload zip as artifact
         uses: actions/upload-artifact@v4

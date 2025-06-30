@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "ChatGPT CLI Bridge [DEV]",
-    "version": "0.0.1-dev",
+    "version": "0.0.5",
     "description": "Bridge between CLI and ChatGPT Web UI via content script (DEV mode).",
     "permissions": [
         "scripting",
@@ -27,7 +27,6 @@
         }
     ],
     "action": {
-        "default_popup": "popup.html",
         "default_icon": "icon/icon.png"
     }
 }

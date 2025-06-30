@@ -101,15 +101,15 @@ func initialModel() Model {
 	// Initialize templates
 	gitTemplates := map[string]string{
 		"Code Review":    "Please review this diff and provide feedback:\n\n$(git diff --cached)\n\nFocus on:\n- Code quality\n- Security issues\n- Performance considerations",
-		"Commit Message": "Generate a concise commit message for these changes:\n\n$(git diff --cached)\n\nFormat: type(scope): description",
+		"Commit Message": "Generate a concise commit message for these changes:\n\n$(git diff --cached)\n\n Please along with same format $(git log -n 3)\n\nFormat: type(scope): description",
 		"Change Summary": "Summarize the changes in this commit:\n\n$(git log --oneline -1)\n$(git diff HEAD~1)",
-		"Custom...":      "",
+		"Custom...":      "$(git diff --cached)",
 	}
 
 	fileTemplates := map[string]string{
 		"Code Review":   "Please review this code and provide feedback:\n\n$(files)\n\nFocus on:\n- Code quality\n- Best practices\n- Potential issues",
 		"Documentation": "Generate documentation for this code:\n\n$(files)\n\nInclude:\n- Function descriptions\n- Usage examples\n- Parameters and return values",
-		"Custom...":     "",
+		"Custom...":     "Please add your prompt with $(files)",
 	}
 
 	// Initialize viewport
@@ -172,23 +172,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 
-		// Update viewport size when on file select step
-		if m.currentStep == stepFileSelect {
-			headerHeight := 4 // Title + spacing
-			footerHeight := 4 // Help + message + spacing
-			viewportHeight := msg.Height - headerHeight - footerHeight
-			if viewportHeight < 3 {
-				viewportHeight = 3
-			}
-
-			viewportWidth := msg.Width - 4 // Account for border and padding
-			if viewportWidth < 20 {
-				viewportWidth = 20
-			}
-
-			m.viewport.Width = viewportWidth
-			m.viewport.Height = viewportHeight
-		}
 		return m, nil
 
 	case tea.KeyMsg:
@@ -213,7 +196,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "esc":
-			if m.currentStep > stepPromptType {
+			if m.currentStep == stepGitTemplate {
+				m.currentStep = stepPromptType
+				m.cursor = 0
+			} else if m.currentStep > stepPromptType {
 				m.currentStep--
 				m.cursor = 0
 			}
@@ -240,6 +226,35 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, cmd
+}
+
+func (m Model) applyWindowSize() Model {
+	if m.currentStep == stepFileSelect {
+		headerHeight := 4
+		footerHeight := 4
+		viewportHeight := m.height - headerHeight - footerHeight
+		if viewportHeight < 3 {
+			viewportHeight = 3
+		}
+		viewportWidth := m.width - 4
+		if viewportWidth < 20 {
+			viewportWidth = 20
+		}
+
+		m.viewport.Width = viewportWidth
+		m.viewport.Height = viewportHeight
+	}
+
+	if m.currentStep == stepGitEdit || m.currentStep == stepFileEdit {
+		taHeight := m.height - 8
+		if taHeight < 5 {
+			taHeight = 5
+		}
+		m.textarea.SetHeight(taHeight)
+		m.textarea.SetWidth(m.width - 6)
+	}
+
+	return m
 }
 
 func (m Model) updatePromptType(msg tea.KeyMsg) (Model, tea.Cmd) {
@@ -322,6 +337,7 @@ func (m Model) updateFileSelect(msg tea.KeyMsg) (Model, tea.Cmd) {
 			m.cursor = 0
 			m.templates = []string{"Code Review", "Documentation", "Custom..."}
 		}
+		m = m.applyWindowSize()
 	}
 	return m, nil
 }
@@ -499,7 +515,7 @@ func (m Model) viewPromptType() string {
 	help := helpStyle.Render("[↑↓ Navigate] [Tab: Next] [Ctrl+C: Quit]")
 
 	// Adjust box width based on terminal size
-	boxWidth := 50
+	boxWidth := m.width - 4
 	if m.width > 0 && m.width < 60 {
 		boxWidth = m.width - 10
 	}
@@ -545,7 +561,7 @@ func (m Model) viewTemplateSelect() string {
 	help := helpStyle.Render("[↑↓ Navigate] [Tab: Next] [Esc: Back]")
 
 	// Adjust box width based on terminal size
-	boxWidth := 50
+	boxWidth := m.width - 4
 	if m.width > 0 && m.width < 60 {
 		boxWidth = m.width - 10
 	}
@@ -559,39 +575,18 @@ func (m Model) viewTemplateSelect() string {
 }
 
 func (m Model) viewGitEdit() string {
-	// title := titleStyle.Render("Step 3/4: Review & Edit")
-
-	// content := fmt.Sprintf("Template: %s\n\n%s", m.selectedTemplate, m.customPrompt)
-
-	// help := helpStyle.Render("[Tab: Next] [Esc: Back] (Edit functionality would be added here)")
-
-	// // Adjust box width based on terminal size
-	// boxWidth := 80
-	// if m.width > 0 && m.width < 90 {
-	// 	boxWidth = m.width - 10
-	// }
-
-	// boxContent := boxStyle.Width(boxWidth).Render(content)
-
-	// return fmt.Sprintf("%s\n%s\n%s\n%s",
-	// 	title,
-	// 	boxContent,
-	// 	help,
-	// 	m.message,
-	// )
 	title := titleStyle.Render("Step 3/4: Review & Edit")
 
 	body := fmt.Sprintf("Template: %s\n\n%s", m.selectedTemplate, m.textarea.View())
 
 	help := helpStyle.Render("[↑↓←→ Type freely] [Tab: Next] [Esc: Back]")
 
-	boxWidth := 80
+	boxWidth := m.width - 4
 	if m.width > 0 && m.width < 90 {
 		boxWidth = m.width - 10
 	}
 
 	boxContent := boxStyle.Width(boxWidth).Render(body)
-	// boxContent := boxStyle.Width(boxWidth).Render(body)
 
 	return fmt.Sprintf("%s\n%s\n%s\n%s",
 		title,
@@ -608,7 +603,8 @@ func (m Model) viewFileEdit() string {
 
 	help := helpStyle.Render("[↑↓←→ Type freely] [Tab: Next] [Esc: Back]")
 
-	boxWidth := 80
+	boxWidth := m.width - 4
+
 	if m.width > 0 && m.width < 90 {
 		boxWidth = m.width - 10
 	}
@@ -664,8 +660,9 @@ func (m Model) viewFinal() string {
 
 	}
 	help := helpStyle.Render(helpStr)
-	// Adjust dimensions based on terminal size
-	boxWidth := 80
+
+	boxWidth := m.width - 4
+
 	if m.width > 0 && m.width < 90 {
 		boxWidth = m.width - 10
 	}

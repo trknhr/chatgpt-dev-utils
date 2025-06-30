@@ -13,6 +13,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Set version in manifest.json
         run: |
           TAG_NAME=${GITHUB_REF##*/}
@@ -23,6 +28,8 @@ jobs:
       - name: Zip extension
         run: |
           cd extension
+          npm run build:prod
+          cd dist
           zip -r ../extension.zip .
 
       - name: Upload artifact
