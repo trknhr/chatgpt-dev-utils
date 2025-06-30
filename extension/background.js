@@ -1,7 +1,22 @@
 let ws = null;
 
+const LOG_LEVEL = __LOG_LEVEL__; 
+
+const LOG_LEVELS = {
+  none: 0,
+  error: 1,
+  warn: 2,
+  log: 3
+};
+
+function shouldLog(type) {
+  return LOG_LEVELS[type] <= LOG_LEVELS[LOG_LEVEL];
+}
+
 // Utility function to add timestamps to logs
 function logWithTimestamp(message, type = 'log') {
+  if (!shouldLog(type)) return;
+
   const timestamp = new Date().toISOString();
   const formattedMessage = `[${timestamp}] ${message}`;
   
