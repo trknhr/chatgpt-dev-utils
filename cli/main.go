@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/textarea"
@@ -39,6 +40,9 @@ const (
 	stepFinal
 )
 
+// Custom message types
+type checkConnectionMsg struct{}
+
 // File tree node
 type FileNode struct {
 	Name     string
@@ -52,24 +56,24 @@ type FileNode struct {
 
 // Model represents the application state
 type Model struct {
-	currentStep      step
-	promptType       string // "file" or "git"
-	fileTree         *FileNode
-	flatFiles        []*FileNode // flattened view for navigation
-	cursor           int
-	selectedFiles    []*FileNode
-	templates        []string
-	selectedTemplate string
-	customPrompt     string
-	finalPrompt      string
-	gitTemplates     map[string]string
-	fileTemplates    map[string]string
-	message          string
-	width            int
-	height           int
-	viewport         viewport.Model
-	extensionEnabled bool // Flag to show extension button
-	textarea         textarea.Model
+	currentStep        step
+	promptType         string // "file" or "git"
+	fileTree           *FileNode
+	flatFiles          []*FileNode // flattened view for navigation
+	cursor             int
+	selectedFiles      []*FileNode
+	templates          []string
+	selectedTemplate   string
+	customPrompt       string
+	finalPrompt        string
+	gitTemplates       map[string]string
+	fileTemplates      map[string]string
+	message            string
+	width              int
+	height             int
+	viewport           viewport.Model
+	extensionConnected bool // Track if extension is connected via WebSocket
+	textarea           textarea.Model
 }
 
 // Styles
@@ -93,7 +97,7 @@ var (
 			Margin(1, 0)
 )
 
-func initialModel(extensionEnabled bool) Model {
+func initialModel() Model {
 	// Initialize templates
 	gitTemplates := map[string]string{
 		"Code Review":    "Please review this diff and provide feedback:\n\n$(git diff --cached)\n\nFocus on:\n- Code quality\n- Security issues\n- Performance considerations",
@@ -133,23 +137,37 @@ func initialModel(extensionEnabled bool) Model {
 		Padding(1, 1)
 
 	return Model{
-		currentStep:      stepPromptType,
-		gitTemplates:     gitTemplates,
-		fileTemplates:    fileTemplates,
-		viewport:         vp,
-		extensionEnabled: extensionEnabled,
-		textarea:         ta,
+		currentStep:        stepPromptType,
+		gitTemplates:       gitTemplates,
+		fileTemplates:      fileTemplates,
+		viewport:           vp,
+		extensionConnected: false, // Start with no connection
+		textarea:           ta,
 	}
 }
 
 func (m Model) Init() tea.Cmd {
-	return nil
+	// Start a timer to check connection status every 2 seconds
+	return tea.Tick(2*time.Second, func(t time.Time) tea.Msg {
+		return checkConnectionMsg{}
+	})
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
+	case checkConnectionMsg:
+		// Check if there are any connected clients
+		connected := len(clients) > 0
+		if connected != m.extensionConnected {
+			m.extensionConnected = connected
+		}
+		// Restart the timer
+		return m, tea.Tick(2*time.Second, func(t time.Time) tea.Msg {
+			return checkConnectionMsg{}
+		})
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -200,19 +218,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor = 0
 			}
 			return m, nil
-		}
-
-		switch m.currentStep {
-		case stepPromptType:
-			return m.updatePromptType(msg)
-		case stepGitTemplate, stepFileTemplate:
-			return m.updateTemplateSelect(msg)
-		case stepGitEdit:
-			return m.updateGitEdit(msg)
-		case stepFileEdit:
-			return m.updateFileEdit(msg)
-		case stepFinal:
-			return m.updateFinal(msg)
+		default:
+			switch m.currentStep {
+			case stepPromptType:
+				return m.updatePromptType(msg)
+			case stepGitTemplate, stepFileTemplate:
+				return m.updateTemplateSelect(msg)
+			case stepGitEdit:
+				return m.updateGitEdit(msg)
+			case stepFileEdit:
+				return m.updateFileEdit(msg)
+			case stepFinal:
+				return m.updateFinal(msg)
+			}
 		}
 	}
 
@@ -234,7 +252,7 @@ func (m Model) updatePromptType(msg tea.KeyMsg) (Model, tea.Cmd) {
 		if m.cursor < 1 {
 			m.cursor++
 		}
-	case "enter", " ":
+	case "tab":
 		if m.cursor == 0 {
 			m.promptType = "file"
 			m.currentStep = stepFileSelect
@@ -352,7 +370,7 @@ func (m Model) updateTemplateSelect(msg tea.KeyMsg) (Model, tea.Cmd) {
 		if m.cursor < len(m.templates)-1 {
 			m.cursor++
 		}
-	case "enter", " ":
+	case "tab":
 		m.selectedTemplate = m.templates[m.cursor]
 		if m.promptType == "git" {
 			m.currentStep = stepGitEdit
@@ -410,7 +428,7 @@ func (m Model) updateFinal(msg tea.KeyMsg) (Model, tea.Cmd) {
 		clipboard.WriteAll(finalContent)
 		m.message = "Copied to clipboard!"
 	case "e":
-		if m.extensionEnabled {
+		if m.extensionConnected {
 			var finalContent string
 			if m.promptType == "file" {
 				// Generate file prompt with actual content
@@ -478,7 +496,7 @@ func (m Model) viewPromptType() string {
 		content += fmt.Sprintf("%s ◯ %s\n", cursor, option)
 	}
 
-	help := helpStyle.Render("[↑↓ Navigate] [Enter: Select] [Ctrl+C: Quit]")
+	help := helpStyle.Render("[↑↓ Navigate] [Tab: Next] [Ctrl+C: Quit]")
 
 	// Adjust box width based on terminal size
 	boxWidth := 50
@@ -524,7 +542,7 @@ func (m Model) viewTemplateSelect() string {
 		content += fmt.Sprintf("%s ◯ %s\n", cursor, template)
 	}
 
-	help := helpStyle.Render("[↑↓ Navigate] [Enter: Select] [Esc: Back]")
+	help := helpStyle.Render("[↑↓ Navigate] [Tab: Next] [Esc: Back]")
 
 	// Adjust box width based on terminal size
 	boxWidth := 50
@@ -641,7 +659,7 @@ func (m Model) viewFinal() string {
 	}
 
 	helpStr := "[C: Copy with Content] [Esc: Back]"
-	if m.extensionEnabled {
+	if m.extensionConnected {
 		helpStr += " [E: Send to Extension]"
 
 	}
@@ -854,7 +872,7 @@ func startWebSocketServer() {
 	})
 
 	go handleMessages()
-	log.Println("WebSocket server started at :32123")
+
 	go func() {
 		err := http.ListenAndServe(":32123", nil)
 		if err != nil {
@@ -864,7 +882,6 @@ func startWebSocketServer() {
 }
 
 func handleConnections(w http.ResponseWriter, r *http.Request) {
-	// CORS対応など必要ならここに追記
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -899,22 +916,11 @@ func handleMessages() {
 }
 
 func main() {
-	// Parse command line flags
-	extensionEnabled := false
-	for _, arg := range os.Args[1:] {
-		if arg == "--extension" || arg == "-e" {
-			extensionEnabled = true
-			break
-		}
-	}
-
-	// Start WebSocket server if extension is enabled
-	if extensionEnabled {
-		go startWebSocketServer()
-	}
+	// Always start WebSocket server
+	go startWebSocketServer()
 
 	p := tea.NewProgram(
-		initialModel(extensionEnabled),
+		initialModel(),
 		tea.WithAltScreen(),       // Use alternate screen buffer
 		tea.WithMouseCellMotion(), // Enable mouse support
 	)

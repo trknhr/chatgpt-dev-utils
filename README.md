@@ -41,11 +41,7 @@ This will:
 cdev
 ```
 
-### With Chrome Extension
-
-```bash
-cdev --extension
-```
+The WebSocket server starts automatically to enable Chrome extension integration.
 
 You will be guided through:
 
@@ -81,7 +77,7 @@ To run locally:
 
 ```bash
 cd cli
-go run . --extension
+go run .
 ```
 
 To build:
@@ -89,7 +85,7 @@ To build:
 ```bash
 cd cli
 go build -o cdev
-./cdev --extension
+./cdev
 ```
 
 Requires Go 1.24+

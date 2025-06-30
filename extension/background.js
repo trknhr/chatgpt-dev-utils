@@ -1,5 +1,22 @@
 let ws = null;
 
+// Utility function to add timestamps to logs
+function logWithTimestamp(message, type = 'log') {
+  const timestamp = new Date().toISOString();
+  const formattedMessage = `[${timestamp}] ${message}`;
+  
+  switch (type) {
+    case 'error':
+      console.error(formattedMessage);
+      break;
+    case 'warn':
+      console.warn(formattedMessage);
+      break;
+    default:
+      console.log(formattedMessage);
+  }
+}
+
 // Check if the local CLI proxy is available before attempting to connect
 function isServerRunning() {
   return fetch("http://localhost:32123/ping", { method: "GET" })
@@ -15,24 +32,24 @@ function connectWebSocket() {
   ws = new WebSocket("ws://localhost:32123/ws");
 
   ws.addEventListener("open", () => {
-    console.log("✅ WebSocket connected to CLI proxy");
+    logWithTimestamp("✅ WebSocket connected to CLI proxy");
   });
 
   ws.addEventListener("message", (event) => {
-    console.log("📬 Message received from CLI:", event.data);
+    logWithTimestamp("📬 Message received from CLI: " + event.data);
     try {
       const { type, prompt } = JSON.parse(event.data);
       if (type === "chatgpt-prompt") {
-        console.log("📨 Prompt received from CLI:", prompt);
+        logWithTimestamp("📨 Prompt received from CLI: " + prompt);
         openOrCreateChatGPTTab(prompt);
       }
     } catch (e) {
-      console.error("❌ Invalid WS message:", e);
+      logWithTimestamp("❌ Invalid WS message: " + e, 'error');
     }
   });
 
   ws.addEventListener("close", () => {
-    console.warn("🔌 WebSocket disconnected");
+    logWithTimestamp("🔌 WebSocket disconnected", 'warn');
     ws = null;
   });
 
@@ -47,15 +64,15 @@ setInterval(() => {
   if (!ws || ws.readyState === WebSocket.CLOSED) {
     isServerRunning().then((running) => {
       if (running) {
-        console.log("🔁 Attempting to reconnect WebSocket...");
+        logWithTimestamp("🔁 Attempting to reconnect WebSocket...");
         connectWebSocket();
       } else {
-        console.log("🚫 CLI proxy is not running");
+        logWithTimestamp("🚫 CLI proxy is not running");
       }
     });
   } else if (ws.readyState === WebSocket.OPEN) {
     ws.send("ping");
-    console.log("📡 Sent ping to CLI proxy (keep-alive)");
+    logWithTimestamp("📡 Sent ping to CLI proxy (keep-alive)");
   }
 }, 1000);
 
@@ -66,7 +83,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'heartbeat') {
-    console.log("I'm alive 🫀");
+    logWithTimestamp("I'm alive 🫀");
   }
 });
 
@@ -78,22 +95,22 @@ function openOrCreateChatGPTTab(prompt) {
     );
 
     if (existingNewChatPage) {
-      console.log("🟢 Found existing ChatGPT tab:", existingNewChatPage.id);
+      logWithTimestamp("🟢 Found existing ChatGPT tab: " + existingNewChatPage.id);
       chrome.tabs.sendMessage(existingNewChatPage.id, { type: "chatgpt-prompt", prompt });
     } else {
       chrome.tabs.create({ url: "https://chatgpt.com" }, (tab) => {
         const tabId = tab.id;
-        console.log("🆕 Created new ChatGPT tab:", tabId);
+        logWithTimestamp("🆕 Created new ChatGPT tab: " + tabId);
 
         const checkTabReady = (retries = 20) => {
           if (retries <= 0) {
-            console.warn("⚠️ New ChatGPT tab did not load in time");
+            logWithTimestamp("⚠️ New ChatGPT tab did not load in time", 'warn');
             return;
           }
 
           chrome.tabs.get(tabId, (updatedTab) => {
             if (updatedTab.status === "complete") {
-              console.log("✅ ChatGPT tab is ready:", updatedTab.id);
+              logWithTimestamp("✅ ChatGPT tab is ready: " + updatedTab.id);
               chrome.tabs.sendMessage(updatedTab.id, { type: "chatgpt-prompt", prompt });
             } else {
               setTimeout(() => checkTabReady(retries - 1), 500);

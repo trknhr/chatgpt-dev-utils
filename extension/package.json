@@ -1,0 +1,12 @@
+{
+  "name": "chatgpt-dev-utils",
+  "version": "0.0.5",
+  "description": "ChatGPT Dev Utils",
+  "license": "Apache-2.0",
+  "author": "Teruo Kunihiro",
+  "type": "module",
+  "scripts": {
+    "build:dev": "node build.mjs dev",
+    "build:prod": "node build.mjs prod"
+  }
+}
