@@ -2,7 +2,7 @@ APP_NAME := chatgpt-dev-utils
 BIN_DIR := $(GOPATH)/bin
 GO_FILES := main.go
 
-.PHONY: all build install clean run
+.PHONY: all build install clean run test
 
 all: build
 
@@ -20,3 +20,6 @@ debug:
 
 clean:
 	rm -f $(APP_NAME)
+
+test:
+	go test ./...

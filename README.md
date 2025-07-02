@@ -102,7 +102,7 @@ All templates are editable via TUI.
 
 ## 📬 Feedback & Contributions
 
-PRs and issues welcome → [github.com/your-org/chatgpt-dev-utils](https://github.com/your-org/chatgpt-dev-utils)
+PRs and issues welcome → [github.com/trknhr/chatgpt-dev-utils](https://github.com/trknhr/chatgpt-dev-utils)
 
 ## 📄 License
 

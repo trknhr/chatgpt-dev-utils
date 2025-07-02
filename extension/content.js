@@ -26,26 +26,26 @@ chrome.runtime.onMessage.addListener((message) => {
 
     waitForInputBox().then((inputBox) => {
       setTimeout(() => {
-      inputBox.focus();
-      const html = message.prompt
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/\n/g, "<br>");
+        inputBox.focus();
+        const html = message.prompt
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\n/g, "<br>");
         inputBox.innerHTML = textToParagraphs(message.prompt)
         inputBox.dispatchEvent(new InputEvent("input", { bubbles: true }));
 
-      // After wainting 100ms, Fire Enter key event
-      setTimeout(() => {
-        inputBox.dispatchEvent(new KeyboardEvent("keydown", {
-          bubbles: true,
-          cancelable: true,
-          key: "Enter",
-          code: "Enter",
-          keyCode: 13,
-          which: 13
-        }));
-      }, 1000);
+        // After wainting 100ms, Fire Enter key event
+        setTimeout(() => {
+          inputBox.dispatchEvent(new KeyboardEvent("keydown", {
+            bubbles: true,
+            cancelable: true,
+            key: "Enter",
+            code: "Enter",
+            keyCode: 13,
+            which: 13
+          }));
+        }, 1000);
       })
       // Important: fire `input` event
 
