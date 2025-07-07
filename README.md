@@ -6,8 +6,6 @@
 
 A developer-friendly CLI tool to send prompts directly to ChatGPT using your Chrome session. Perfect for commit messages, code review, explanations, and more — without using the OpenAI API.
 
----
-
 ## ✨ Features
 
 - Send prompts from CLI → Chrome extension → ChatGPT tab
@@ -15,8 +13,7 @@ A developer-friendly CLI tool to send prompts directly to ChatGPT using your Chr
 - Interactive TUI interface powered by [Bubble Tea](https://github.com/charmbracelet/bubbletea)
 - WebSocket-based integration (no OpenAI API key required)
 - File/folder navigation & Git integration
-
----
+- Official Chrome extension available on the [Chrome Web Store](https://chromewebstore.google.com/detail/chatgpt-dev-utils-extensi/bdfinimpohfncpgeokmamgfebfhnkebi)
 
 ## 📦 Installation (macOS / Linux)
 
@@ -31,11 +28,10 @@ This will:
 - Download the correct binary
 - Install it to `/usr/local/bin/cdev`
 
----
-
 ## 🚀 Quick Start
 
-### Interactive Mode
+1. **Install the Chrome Extension** from the [Chrome Web Store](https://chromewebstore.google.com/detail/chatgpt-dev-utils-extensi/bdfinimpohfncpgeokmamgfebfhnkebi)
+2. **Run the CLI tool:**
 
 ```bash
 cdev
@@ -53,10 +49,31 @@ You will be guided through:
 
 ## 🔌 Chrome Extension Setup
 
+### Option 1: Install from Chrome Web Store (Recommended)
+
+Install the official extension from the Chrome Web Store:
+
+👉 **[ChatGPT Dev Utils Extension](https://chromewebstore.google.com/detail/chatgpt-dev-utils-extensi/bdfinimpohfncpgeokmamgfebfhnkebi)**
+
+This is the easiest way to get started - just click "Add to Chrome" and you're ready to go!
+
+### Option 2: Load Unpacked Extension (Development)
+
+For development or if you prefer to load the extension manually:
+
 1. Open `chrome://extensions`
-2. Load `extension/` directory as an unpacked extension
-3. Open `chat.openai.com`
-4. Ensure permissions allow WebSocket access
+2. Enable "Developer mode" 
+3. Click "Load unpacked" and select the `extension/` directory
+4. Open `chat.openai.com`
+5. Ensure permissions allow WebSocket access
+
+### Upgrading from Unpacked to Chrome Web Store Version
+
+If you're currently using the unpacked extension:
+
+1. Remove the unpacked extension from `chrome://extensions`
+2. Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/chatgpt-dev-utils-extensi/bdfinimpohfncpgeokmamgfebfhnkebi)
+3. The Chrome Web Store version will automatically update with new features and bug fixes
 
 
 ## 🧠 How It Works
@@ -107,4 +124,3 @@ PRs and issues welcome → [github.com/trknhr/chatgpt-dev-utils](https://github.
 ## 📄 License
 
 Apache 2.0 License — © 2025 Teruo Kunihiro
-
