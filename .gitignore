@@ -28,3 +28,7 @@ Thumbs.db
 /tmp/
 
 CLAUDE.md
+memory-bank/
+GEMINI.md
+.cursor
+.ai-docs

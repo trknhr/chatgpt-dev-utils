@@ -1,0 +1,17 @@
+userName: "trknhr"   # fallback git config user.name or whoami when userName is embpty 
+mainBranchName: "main"
+
+docBranchNameTemplate: "@ai-docs/{userName}"  # {userName} ↔ runtime replace
+docWorktreeDir: ".ai-docs"
+
+aIAgentMemoryContextPath:
+  Cline: "memory-bank"
+  Claude: "CLAUDE.md"
+  Gemini: "GEMINI.md"
+  Cursor: ".cursor/rules"
+
+ignorePatterns:
+  - "memory-bank/"
+  - "CLAUDE.md"
+  - "GEMINI.md"
+  - ".cursor/rules/"
