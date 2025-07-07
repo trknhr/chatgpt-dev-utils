@@ -79,7 +79,6 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	for {
 		_, _, err := ws.ReadMessage()
 		if err != nil {
-			// log.Println("Extension disconnected")
 			delete(clients, ws)
 			break
 		}
